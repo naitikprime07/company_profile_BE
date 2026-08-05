@@ -9,7 +9,11 @@ const openingRoutes = require("./routes/openingRoutes");
 
 function createApp() {
   const app = express();
-  const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  const allowedOrigins = (
+    process.env.CLIENT_ORIGIN ||
+    "http://localhost:5173" ||
+    "https://company-profile-6ii9o5thg-prime-softech.vercel.app"
+  )
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
