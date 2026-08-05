@@ -1,7 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const contactRoutes = require("../routes/contactRoutes");
+const contactRoutes = require("./routes/contactRoutes");
+const errorHandler = require("./middlewares/errorHandler");
+const notFound = require("./middlewares/notFound");
+const adminRoutes = require("./routes/adminRoutes");
+const openingRoutes = require("./routes/openingRoutes");
 
 function createApp() {
   const app = express();
@@ -19,18 +23,13 @@ function createApp() {
     res.json({ success: true, message: "API is healthy" });
   });
   app.use("/api/contacts", contactRoutes);
+  app.use("/api/openings", openingRoutes);
+  app.use("/api/admin", adminRoutes);
 
-  app.use((_req, res) => {
-    res.status(404).json({ success: false, message: "Route not found" });
-  });
-
-  app.use((error, _req, res, _next) => {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  });
+  app.use(notFound);
+  app.use(errorHandler);
 
   return app;
 }
 
 module.exports = createApp;
-

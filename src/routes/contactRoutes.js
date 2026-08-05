@@ -1,6 +1,7 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const { createContact } = require("../src/controllers/contactController");
+const { createContact } = require("../controllers/contactController");
+const validateContactRequest = require("../middlewares/validateContact");
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const contactLimiter = rateLimit({
   message: { success: false, message: "Too many submissions. Please try again later." },
 });
 
-router.post("/", contactLimiter, createContact);
+router.post("/", contactLimiter, validateContactRequest, createContact);
 
 module.exports = router;
 
