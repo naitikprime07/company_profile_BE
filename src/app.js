@@ -12,7 +12,7 @@ function createApp() {
   const allowedOrigins = (
     process.env.CLIENT_ORIGIN ||
     "http://localhost:5173" ||
-    "https://company-profile-6ii9o5thg-prime-softech.vercel.app"
+    "https://company-profile-be.vercel.app"
   )
     .split(",")
     .map((origin) => origin.trim())
