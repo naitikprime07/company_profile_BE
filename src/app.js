@@ -20,7 +20,7 @@ function createApp() {
 
   app.set("trust proxy", 1);
   app.use(helmet());
-  app.use(cors({ origin: allowedOrigins }));
+  app.use(cors({ origin: "*" }));
   app.use(express.json({ limit: "20kb" }));
 
   app.get("/api/health", (_req, res) => {
