@@ -1,7 +1,8 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const { createContact } = require("../controllers/contactController");
-const validateContactRequest = require("../middlewares/validateContact");
+const validateRequest = require("../middlewares/validateRequest");
+const { contact } = require("../validators/joiSchemas");
 
 const router = express.Router();
 
@@ -16,6 +17,6 @@ const contactLimiter = rateLimit({
   },
 });
 
-router.post("/", contactLimiter, validateContactRequest, createContact);
+router.post("/", contactLimiter, validateRequest(contact), createContact);
 
 module.exports = router;

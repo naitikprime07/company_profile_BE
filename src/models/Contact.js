@@ -1,10 +1,20 @@
 const mongoose = require("mongoose");
-const { BUDGET_OPTIONS, SERVICE_OPTIONS, CONTACT_STATUSES } = require("../constants/contactOptions");
+const {
+  BUDGET_OPTIONS,
+  SERVICE_OPTIONS,
+  CONTACT_STATUSES,
+} = require("../constants/contactOptions");
 
 const contactSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
-    email: { type: String, required: true, trim: true, lowercase: true, maxlength: 254 },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 254,
+    },
     phone: { type: String, required: true, trim: true, maxlength: 20 },
     company: { type: String, trim: true, maxlength: 150, default: "" },
     service: { type: String, required: true, enum: SERVICE_OPTIONS },

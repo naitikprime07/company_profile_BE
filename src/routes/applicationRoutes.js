@@ -1,5 +1,10 @@
 const router = require("express").Router();
-const { upload } = require("../config/resumeUpload");
 const { create } = require("../controllers/applicationController");
-router.post("/:openingId", upload.single("resume"), create);
+const validate = require("../middlewares/validateRequest");
+const { objectIdParams } = require("../validators/joiSchemas");
+router.post(
+  "/:openingId",
+  validate({ params: objectIdParams("openingId") }),
+  create,
+);
 module.exports = router;

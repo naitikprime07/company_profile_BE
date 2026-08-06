@@ -1,10 +1,4 @@
 function errorHandler(error, _req, res, _next) {
-  if (error?.code === "LIMIT_FILE_SIZE")
-    return res
-      .status(413)
-      .json({ success: false, message: "Resume must be 5 MB or smaller." });
-  if (error?.message === "Only PDF, DOC, and DOCX resumes are accepted.")
-    return res.status(422).json({ success: false, message: error.message });
   if (
     error?.code === 11000 &&
     error?.keyPattern?.opening &&
@@ -16,6 +10,12 @@ function errorHandler(error, _req, res, _next) {
         success: false,
         message: "You have already applied for this opening with this email.",
       });
+  if (error?.code === 11000 && error?.keyPattern?.email)
+    return res.status(409).json({
+      success: false,
+      message:
+        "A submission with this email already exists. Please try again after the server restarts.",
+    });
   console.error(error);
 
   if (error.name === "ValidationError") {
