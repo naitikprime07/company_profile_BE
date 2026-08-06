@@ -10,10 +10,12 @@ const contactLimiter = rateLimit({
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { success: false, message: "Too many submissions. Please try again later." },
+  message: {
+    success: false,
+    message: "Too many submissions. Please try again later.",
+  },
 });
 
 router.post("/", contactLimiter, validateContactRequest, createContact);
 
 module.exports = router;
-

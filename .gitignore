@@ -3,6 +3,7 @@
 logs
 *.log
 npm-debug.log*
+uploads/
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
@@ -30,4 +31,3 @@ build
 *.njsproj
 *.sln
 *.sw?
-

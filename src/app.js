@@ -6,6 +6,7 @@ const errorHandler = require("./middlewares/errorHandler");
 const notFound = require("./middlewares/notFound");
 const adminRoutes = require("./routes/adminRoutes");
 const openingRoutes = require("./routes/openingRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
 
 function createApp() {
   const app = express();
@@ -28,6 +29,7 @@ function createApp() {
   });
   app.use("/api/contacts", contactRoutes);
   app.use("/api/openings", openingRoutes);
+  app.use("/api/applications", applicationRoutes);
   app.use("/api/admin", adminRoutes);
 
   app.use(notFound);

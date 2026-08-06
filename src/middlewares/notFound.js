@@ -3,4 +3,3 @@ function notFound(_req, res) {
 }
 
 module.exports = notFound;
-

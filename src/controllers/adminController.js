@@ -20,30 +20,24 @@ async function createAdmin(req, res, next) {
         .status(422)
         .json({ success: false, message: "A valid email is required." });
     if (password.length < 12)
-      return res
-        .status(422)
-        .json({
-          success: false,
-          message: "Password must be at least 12 characters.",
-        });
+      return res.status(422).json({
+        success: false,
+        message: "Password must be at least 12 characters.",
+      });
     if (await Admin.exists({ email }))
-      return res
-        .status(409)
-        .json({
-          success: false,
-          message: "An admin with this email already exists.",
-        });
+      return res.status(409).json({
+        success: false,
+        message: "An admin with this email already exists.",
+      });
     const admin = await Admin.create({
       email,
       passwordHash: await bcrypt.hash(password, 12),
     });
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "Admin created successfully.",
-        data: { id: admin.id, email: admin.email },
-      });
+    return res.status(201).json({
+      success: true,
+      message: "Admin created successfully.",
+      data: { id: admin.id, email: admin.email },
+    });
   } catch (e) {
     next(e);
   }
