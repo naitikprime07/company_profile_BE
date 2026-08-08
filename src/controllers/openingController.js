@@ -11,11 +11,18 @@ const pick = (b) => ({
   keyRequirements: b.keyRequirements,
   isActive: b.isActive,
 });
-async function publicList(_q, res, next) {
+
+async function publicList(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await Opening.find({ isActive: true })
+      data: await Opening.find({
+        isActive: true,
+        type:
+          req.query.type === ""
+            ? { $in: ["internship", "experienced"] }
+            : req.query.type,
+      })
         .sort({ createdAt: -1 })
         .lean(),
     });
@@ -23,12 +30,25 @@ async function publicList(_q, res, next) {
     next(e);
   }
 }
+
 async function list(_q, res, next) {
   try {
     res.json({
       success: true,
       data: await Opening.find().sort({ createdAt: -1 }).lean(),
     });
+  } catch (e) {
+    next(e);
+  }
+}
+async function getOne(req, res, next) {
+  try {
+    const item = await Opening.findById(req.params.id).lean();
+    if (!item)
+      return res
+        .status(404)
+        .json({ success: false, message: "Opening not found." });
+    res.json({ success: true, data: item });
   } catch (e) {
     next(e);
   }
@@ -69,4 +89,4 @@ async function remove(req, res, next) {
     next(e);
   }
 }
-module.exports = { publicList, list, create, update, remove };
+module.exports = { publicList, list, getOne, create, update, remove };

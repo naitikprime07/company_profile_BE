@@ -36,6 +36,7 @@ const applicationSchema = new mongoose.Schema(
     linkedInUrl: { type: String, trim: true, maxlength: 500, default: "" },
     githubUrl: { type: String, trim: true, maxlength: 500, default: "" },
     coverLetter: { type: String, trim: true, maxlength: 3000, default: "" },
+    resumeUrl: { type: String, required: true, trim: true, maxlength: 2048 },
     status: {
       type: String,
       enum: ["new", "reviewing", "shortlisted", "rejected", "hired"],

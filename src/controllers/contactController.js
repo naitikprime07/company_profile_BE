@@ -1,8 +1,8 @@
-const contactService = require("../services/contactService");
+const Contact = require("../models/Contact");
 
-async function createContact(req, res, next) {
+const createContact = async (req, res, next) => {
   try {
-    const contact = await contactService.create(req.body);
+    const contact = await Contact.create(req.body);
     return res.status(201).json({
       success: true,
       message: "Thank you. Your project brief has been received.",
@@ -11,6 +11,6 @@ async function createContact(req, res, next) {
   } catch (error) {
     return next(error);
   }
-}
+};
 
 module.exports = { createContact };

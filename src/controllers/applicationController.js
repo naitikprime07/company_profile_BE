@@ -1,9 +1,61 @@
+const crypto = require("crypto");
+const path = require("path");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const Application = require("../models/Application");
 const Opening = require("../models/Opening");
+const { createR2Client, getR2Config } = require("../config/r2");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const phonePattern = /^\+?[1-9]\d{7,14}$/;
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
+
+function isConfiguredResumeUrl(value) {
+  try {
+    const { publicUrl } = getR2Config();
+    const expected = new URL(`${publicUrl}/`);
+    const received = new URL(value);
+    return (
+      received.origin === expected.origin &&
+      received.pathname.startsWith(`${expected.pathname}resumes/`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function createResumeUploadUrl(req, res, next) {
+  try {
+    const { bucket, publicUrl } = getR2Config();
+    const extension = path.extname(req.body.fileName).toLowerCase();
+    const allowedExtensions = new Set([".pdf", ".doc", ".docx"]);
+
+    if (!allowedExtensions.has(extension)) {
+      return res.status(422).json({
+        success: false,
+        message: "Only PDF, DOC, and DOCX resumes are accepted.",
+        errors: { fileName: "Resume file extension is not supported" },
+      });
+    }
+
+    const key = `resumes/${crypto.randomUUID()}${extension}`;
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: req.body.contentType,
+    });
+    const uploadUrl = await getSignedUrl(createR2Client(), command, {
+      expiresIn: 300,
+    });
+
+    return res.json({
+      success: true,
+      data: { uploadUrl, fileUrl: `${publicUrl}/${key}` },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
 async function create(req, res, next) {
   try {
     const opening = await Opening.findOne({
@@ -25,6 +77,8 @@ async function create(req, res, next) {
       errors.email = "email must be valid";
     if (phone && !phonePattern.test(phone))
       errors.phone = "phone must be valid";
+    if (!isConfiguredResumeUrl(req.body.resumeUrl))
+      errors.resumeUrl = "A valid uploaded resume is required";
     if (opening.type === "experienced" && !clean(req.body.noticePeriod))
       errors.noticePeriod = "noticePeriod is required";
     if (Object.keys(errors).length) {
@@ -54,6 +108,7 @@ async function create(req, res, next) {
       linkedInUrl: clean(req.body.linkedInUrl),
       githubUrl: clean(req.body.githubUrl),
       coverLetter: clean(req.body.coverLetter),
+      resumeUrl: clean(req.body.resumeUrl),
     });
     return res.status(201).json({
       success: true,
@@ -71,6 +126,18 @@ async function list(_req, res, next) {
       success: true,
       data: await Application.find().sort({ createdAt: -1 }).lean(),
     });
+  } catch (error) {
+    return next(error);
+  }
+}
+async function getOne(req, res, next) {
+  try {
+    const item = await Application.findById(req.params.id).lean();
+    if (!item)
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found." });
+    return res.json({ success: true, data: item });
   } catch (error) {
     return next(error);
   }
@@ -99,4 +166,28 @@ async function updateStatus(req, res, next) {
     return next(error);
   }
 }
-module.exports = { create, list, updateStatus };
+async function remove(req, res, next) {
+  try {
+    const item = await Application.findByIdAndDelete(req.params.id);
+    if (!item)
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found." });
+    return res.json({
+      success: true,
+      message: "Application deleted successfully.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+async function search(req,res,next){try{const{query,status,page,limit,fromDate,toDate}=req.query,filter=status==="all"?{}:{status};if(fromDate||toDate){filter.createdAt={};if(fromDate){const d=new Date(fromDate);d.setUTCHours(0,0,0,0);filter.createdAt.$gte=d}if(toDate){const d=new Date(toDate);d.setUTCHours(23,59,59,999);filter.createdAt.$lte=d}}const words=String(query).split(/\s+/).filter(Boolean),fields=["firstName","lastName","email","phone","location","openingTitle","currentRole"];if(words.length)filter.$and=words.map(word=>{const safe=word.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");return{$or:fields.map(field=>({[field]:{$regex:safe,$options:"i"}}))}});const[items,total]=await Promise.all([Application.find(filter).sort({createdAt:-1}).skip((page-1)*limit).limit(limit).lean(),Application.countDocuments(filter)]);res.json({success:true,data:{items,pagination:{page,limit,total,totalPages:Math.max(1,Math.ceil(total/limit))}}})}catch(e){next(e)}}
+module.exports = {
+  create,
+  createResumeUploadUrl,
+  getOne,
+  list,
+  remove,
+  search,
+  updateStatus,
+};

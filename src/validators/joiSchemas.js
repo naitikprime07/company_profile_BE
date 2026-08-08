@@ -12,6 +12,11 @@ const objectIdParams = (field = "id") =>
     [field]: Joi.string().hex().length(24).required(),
   });
 
+const getOpeningTypeParams = (field = "type") =>
+  Joi.object({
+    [field]: Joi.string().valid("internship", "experienced", "").required(),
+  });
+
 const contact = Joi.object({
   name: requiredString(100).min(2),
   email: Joi.string().trim().lowercase().email().max(254).required(),
@@ -64,18 +69,109 @@ const contactStatus = Joi.object({
     .required(),
 });
 
+const contactSearch = Joi.object({
+  query: Joi.string().trim().max(150).allow("").default(""),
+  status: Joi.string()
+    .valid("all", ...CONTACT_STATUSES)
+    .default("all"),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(5).max(50).default(10),
+  dateRange: Joi.string().valid("all", "today", "7d", "30d").default("all"),
+  fromDate: Joi.date().iso().allow("").default(""),
+  toDate: Joi.date().iso().allow("").default(""),
+}).custom((value, helpers) => {
+  if (value.fromDate && value.toDate && value.toDate < value.fromDate)
+    return helpers.message({ custom: "toDate must be on or after fromDate" });
+  return value;
+});
+
 const applicationStatus = Joi.object({
   status: Joi.string()
     .valid("new", "reviewing", "shortlisted", "rejected", "hired")
+    .required(),
+});
+const generalApplication = Joi.object({
+  firstName: requiredString(60).min(2),
+  lastName: requiredString(60).min(2),
+  email: Joi.string().trim().lowercase().email().max(254).required(),
+  phone: Joi.string()
+    .trim()
+    .pattern(/^\+?[1-9]\d{7,14}$/)
+    .required(),
+  location: requiredString(120),
+  desiredRole: requiredString(120),
+  skills: requiredString(1000).min(3),
+  experience: Joi.string().trim().max(120).allow("").default(""),
+  interests: requiredString(1000).min(3),
+  message: requiredString(3000).min(20),
+  portfolioUrl: Joi.string().trim().uri().max(500).allow("").default(""),
+  linkedInUrl: Joi.string().trim().uri().max(500).allow("").default(""),
+  githubUrl: Joi.string().trim().uri().max(500).allow("").default(""),
+  resumeUrl: Joi.string().trim().uri().max(2048).required(),
+});
+const generalApplicationStatus = Joi.object({
+  status: Joi.string()
+    .valid("new", "reviewing", "contacted", "archived")
+    .required(),
+});
+const paginatedSearch = (statuses) =>
+  Joi.object({
+    query: Joi.string().trim().max(150).allow("").default(""),
+    status: Joi.string()
+      .valid("all", ...statuses)
+      .default("all"),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(5).max(50).default(10),
+    fromDate: Joi.date().iso().allow("").default(""),
+    toDate: Joi.date().iso().allow("").default(""),
+  }).custom((value, helpers) =>
+    value.fromDate && value.toDate && value.toDate < value.fromDate
+      ? helpers.message({ custom: "toDate must be on or after fromDate" })
+      : value,
+  );
+const applicationSearch = paginatedSearch([
+  "new",
+  "reviewing",
+  "shortlisted",
+  "rejected",
+  "hired",
+]);
+const generalApplicationSearch = paginatedSearch([
+  "new",
+  "reviewing",
+  "contacted",
+  "archived",
+]);
+
+const resumeUpload = Joi.object({
+  fileName: Joi.string().trim().max(255).required(),
+  contentType: Joi.string()
+    .valid(
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    .required(),
+  size: Joi.number()
+    .integer()
+    .min(1)
+    .max(5 * 1024 * 1024)
     .required(),
 });
 
 module.exports = {
   adminCredentials,
   applicationStatus,
+  applicationSearch,
+  generalApplication,
+  generalApplicationStatus,
+  generalApplicationSearch,
   contact,
+  contactSearch,
   contactStatus,
   login,
   objectIdParams,
+  getOpeningTypeParams,
   opening,
+  resumeUpload,
 };
