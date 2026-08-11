@@ -7,9 +7,15 @@ const generalApplications = require("../controllers/generalApplicationController
 const validate = require("../middlewares/validateRequest");
 const schemas = require("../validators/joiSchemas");
 
+//// admin creation and login
 r.post("/create", validate(schemas.adminCredentials), a.createAdmin);
 r.post("/login", validate(schemas.login), a.login);
 r.use(auth);
+
+//// dashboard
+r.get("/dashboard", a.dashboard);
+
+//// contacts
 r.get("/contacts", a.contacts);
 r.get(
   "/contacts/search",
@@ -31,12 +37,34 @@ r.delete(
   validate({ params: schemas.objectIdParams() }),
   a.deleteContact,
 );
+
+///// applications
 r.get("/applications", applications.list);
 r.get(
   "/applications/search",
   validate({ query: schemas.applicationSearch }),
   applications.search,
 );
+r.get(
+  "/applications/:id",
+  validate({ params: schemas.objectIdParams() }),
+  applications.getOne,
+);
+r.patch(
+  "/applications/:id",
+  validate({
+    params: schemas.objectIdParams(),
+    body: schemas.applicationStatus,
+  }),
+  applications.updateStatus,
+);
+r.delete(
+  "/applications/:id",
+  validate({ params: schemas.objectIdParams() }),
+  applications.remove,
+);
+
+////// general applications or applications without opening
 r.get("/general-applications", generalApplications.list);
 r.get(
   "/general-applications/search",
@@ -61,31 +89,16 @@ r.delete(
   validate({ params: schemas.objectIdParams() }),
   generalApplications.remove,
 );
-r.get(
-  "/applications/:id",
-  validate({ params: schemas.objectIdParams() }),
-  applications.getOne,
-);
-r.patch(
-  "/applications/:id",
-  validate({
-    params: schemas.objectIdParams(),
-    body: schemas.applicationStatus,
-  }),
-  applications.updateStatus,
-);
-r.delete(
-  "/applications/:id",
-  validate({ params: schemas.objectIdParams() }),
-  applications.remove,
-);
+
+///// openings
+r.post("/openings", validate(schemas.opening), o.create);
 r.get("/openings", o.list);
+r.get("/openings/search", validate({ query: schemas.openingSearch }), o.search);
 r.get(
   "/openings/:id",
   validate({ params: schemas.objectIdParams() }),
   o.getOne,
 );
-r.post("/openings", validate(schemas.opening), o.create);
 r.put(
   "/openings/:id",
   validate({ params: schemas.objectIdParams(), body: schemas.opening }),
@@ -96,4 +109,5 @@ r.delete(
   validate({ params: schemas.objectIdParams() }),
   o.remove,
 );
+
 module.exports = r;

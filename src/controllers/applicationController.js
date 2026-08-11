@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const path = require("path");
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { DeleteObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const Application = require("../models/Application");
 const Opening = require("../models/Opening");
@@ -10,7 +10,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const phonePattern = /^\+?[1-9]\d{7,14}$/;
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
 
-function isConfiguredResumeUrl(value) {
+const isConfiguredResumeUrl = (value) => {
   try {
     const { publicUrl } = getR2Config();
     const expected = new URL(`${publicUrl}/`);
@@ -22,9 +22,29 @@ function isConfiguredResumeUrl(value) {
   } catch {
     return false;
   }
-}
+};
 
-async function createResumeUploadUrl(req, res, next) {
+const getResumeObjectKey = (value) => {
+  try {
+    const { publicUrl } = getR2Config();
+    const expected = new URL(`${publicUrl}/`);
+    const received = new URL(value);
+    if (
+      received.origin !== expected.origin ||
+      !received.pathname.startsWith(expected.pathname)
+    )
+      return null;
+    const key = decodeURIComponent(
+      received.pathname.slice(expected.pathname.length),
+    );
+    return key.startsWith("resumes/") && !key.includes("..") ? key : null;
+  } catch {
+    return null;
+  }
+};
+
+///// public controllers
+const createResumeUploadUrl = async (req, res, next) => {
   try {
     const { bucket, publicUrl } = getR2Config();
     const extension = path.extname(req.body.fileName).toLowerCase();
@@ -55,8 +75,9 @@ async function createResumeUploadUrl(req, res, next) {
   } catch (error) {
     return next(error);
   }
-}
-async function create(req, res, next) {
+};
+
+const create = async (req, res, next) => {
   try {
     const opening = await Opening.findOne({
       _id: req.params.openingId,
@@ -118,9 +139,10 @@ async function create(req, res, next) {
   } catch (error) {
     return next(error);
   }
-}
+};
 
-async function list(_req, res, next) {
+////// admin controllers
+const list = async (req, res, next) => {
   try {
     return res.json({
       success: true,
@@ -129,8 +151,70 @@ async function list(_req, res, next) {
   } catch (error) {
     return next(error);
   }
-}
-async function getOne(req, res, next) {
+};
+
+const search = async (req, res, next) => {
+  try {
+    const { query, status, page, limit, fromDate, toDate } = req.query,
+      filter = status === "all" ? {} : { status };
+    if (fromDate || toDate) {
+      filter.createdAt = {};
+      if (fromDate) {
+        const d = new Date(fromDate);
+        d.setUTCHours(0, 0, 0, 0);
+        filter.createdAt.$gte = d;
+      }
+      if (toDate) {
+        const d = new Date(toDate);
+        d.setUTCHours(23, 59, 59, 999);
+        filter.createdAt.$lte = d;
+      }
+    }
+    const words = String(query).split(/\s+/).filter(Boolean),
+      fields = [
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "location",
+        "openingTitle",
+        "currentRole",
+      ];
+    if (words.length)
+      filter.$and = words.map((word) => {
+        const safe = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return {
+          $or: fields.map((field) => ({
+            [field]: { $regex: safe, $options: "i" },
+          })),
+        };
+      });
+    const [items, total] = await Promise.all([
+      Application.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Application.countDocuments(filter),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        items,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / limit)),
+        },
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+const getOne = async (req, res, next) => {
   try {
     const item = await Application.findById(req.params.id).lean();
     if (!item)
@@ -141,8 +225,9 @@ async function getOne(req, res, next) {
   } catch (error) {
     return next(error);
   }
-}
-async function updateStatus(req, res, next) {
+};
+
+const updateStatus = async (req, res, next) => {
   try {
     if (
       !["new", "reviewing", "shortlisted", "rejected", "hired"].includes(
@@ -165,23 +250,34 @@ async function updateStatus(req, res, next) {
   } catch (error) {
     return next(error);
   }
-}
-async function remove(req, res, next) {
+};
+
+const remove = async (req, res, next) => {
   try {
-    const item = await Application.findByIdAndDelete(req.params.id);
+    const item = await Application.findById(req.params.id);
     if (!item)
       return res
         .status(404)
         .json({ success: false, message: "Application not found." });
+
+    const resumeKey = getResumeObjectKey(item.resumeUrl);
+    if (resumeKey) {
+      const { bucket } = getR2Config();
+      await createR2Client().send(
+        new DeleteObjectCommand({ Bucket: bucket, Key: resumeKey }),
+      );
+    }
+
+    await Application.deleteOne({ _id: item._id });
     return res.json({
       success: true,
-      message: "Application deleted successfully.",
+      message: "Application and resume deleted successfully.",
     });
   } catch (error) {
     return next(error);
   }
-}
-async function search(req,res,next){try{const{query,status,page,limit,fromDate,toDate}=req.query,filter=status==="all"?{}:{status};if(fromDate||toDate){filter.createdAt={};if(fromDate){const d=new Date(fromDate);d.setUTCHours(0,0,0,0);filter.createdAt.$gte=d}if(toDate){const d=new Date(toDate);d.setUTCHours(23,59,59,999);filter.createdAt.$lte=d}}const words=String(query).split(/\s+/).filter(Boolean),fields=["firstName","lastName","email","phone","location","openingTitle","currentRole"];if(words.length)filter.$and=words.map(word=>{const safe=word.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");return{$or:fields.map(field=>({[field]:{$regex:safe,$options:"i"}}))}});const[items,total]=await Promise.all([Application.find(filter).sort({createdAt:-1}).skip((page-1)*limit).limit(limit).lean(),Application.countDocuments(filter)]);res.json({success:true,data:{items,pagination:{page,limit,total,totalPages:Math.max(1,Math.ceil(total/limit))}}})}catch(e){next(e)}}
+};
+
 module.exports = {
   create,
   createResumeUploadUrl,

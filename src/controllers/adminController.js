@@ -1,14 +1,20 @@
 const bcrypt = require("bcryptjs"),
   jwt = require("jsonwebtoken"),
   Admin = require("../models/Admin"),
-  Contact = require("../models/Contact");
+  Contact = require("../models/Contact"),
+  Application = require("../models/Application"),
+  GeneralApplication = require("../models/GeneralApplication"),
+  Opening = require("../models/Opening");
+
 const serializeContact = (contact) => {
   const value =
     typeof contact.toObject === "function" ? contact.toObject() : contact;
   const id = String(value._id || value.id);
   return { ...value, _id: id, id };
 };
-async function createAdmin(req, res, next) {
+
+///// admin creation and login
+const createAdmin = async (req, res, next) => {
   try {
     if (
       !process.env.ADMIN_SETUP_KEY ||
@@ -47,8 +53,9 @@ async function createAdmin(req, res, next) {
   } catch (e) {
     next(e);
   }
-}
-async function login(req, res, next) {
+};
+
+const login = async (req, res, next) => {
   try {
     const email = String(req.body.email || "")
         .trim()
@@ -76,8 +83,71 @@ async function login(req, res, next) {
   } catch (e) {
     next(e);
   }
-}
-async function contacts(_req, res, next) {
+};
+
+////// admin dashboard and contact management
+const dashboard = async (req, res, next) => {
+  try {
+    const [
+      totalInquiries,
+      newInquiries,
+      activeInquiries,
+      totalApplications,
+      newApplications,
+      reviewedApplications,
+      newIntroductions,
+      applicationPipeline,
+      openingVacancies,
+      recentContacts,
+    ] = await Promise.all([
+      Contact.countDocuments(),
+      Contact.countDocuments({ status: "new" }),
+      Contact.countDocuments({ status: "in_progress" }),
+      Application.countDocuments(),
+      Application.countDocuments({ status: "new" }),
+      Application.countDocuments({ status: { $ne: "new" } }),
+      GeneralApplication.countDocuments({ status: "new" }),
+      Application.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+      Opening.aggregate([
+        { $match: { isActive: true } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: { $ifNull: ["$vacancies", 1] } },
+          },
+        },
+      ]),
+      Contact.find().sort({ createdAt: -1 }).limit(4).lean(),
+    ]);
+    const pipeline = Object.fromEntries(
+      applicationPipeline.map(({ _id, count }) => [_id, count]),
+    );
+    res.json({
+      success: true,
+      data: {
+        counts: {
+          totalInquiries,
+          newInquiries,
+          activeInquiries,
+          totalApplications,
+          newApplications,
+          reviewedApplications,
+          newIntroductions,
+          openVacancies: openingVacancies[0]?.total || 0,
+        },
+        applicationPipeline: pipeline,
+        recentContacts: recentContacts.map(serializeContact),
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+////// contact management
+const contacts = async (req, res, next) => {
   try {
     res.json({
       success: true,
@@ -88,8 +158,9 @@ async function contacts(_req, res, next) {
   } catch (e) {
     next(e);
   }
-}
-async function searchContacts(req, res, next) {
+};
+
+const searchContacts = async (req, res, next) => {
   try {
     const { query, status, page, limit, dateRange, fromDate, toDate } =
       req.query;
@@ -132,13 +203,21 @@ async function searchContacts(req, res, next) {
         };
       });
     }
-    const [items, total] = await Promise.all([
+
+    const countFilter = { ...filter };
+    delete countFilter.status;
+
+    const [items, total, statusTotals] = await Promise.all([
       Contact.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
       Contact.countDocuments(filter),
+      Contact.aggregate([
+        { $match: countFilter },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
     ]);
     res.json({
       success: true,
@@ -150,13 +229,17 @@ async function searchContacts(req, res, next) {
           total,
           totalPages: Math.max(1, Math.ceil(total / limit)),
         },
+        statusCounts: Object.fromEntries(
+          statusTotals.map(({ _id, count }) => [_id, count]),
+        ),
       },
     });
   } catch (e) {
     next(e);
   }
-}
-async function getContact(req, res, next) {
+};
+
+const getContact = async (req, res, next) => {
   try {
     const item = await Contact.findById(req.params.id).lean();
     if (!item)
@@ -167,8 +250,9 @@ async function getContact(req, res, next) {
   } catch (e) {
     next(e);
   }
-}
-async function updateContact(req, res, next) {
+};
+
+const updateContact = async (req, res, next) => {
   try {
     if (!["new", "in_progress", "resolved"].includes(req.body.status))
       return res
@@ -187,8 +271,9 @@ async function updateContact(req, res, next) {
   } catch (e) {
     next(e);
   }
-}
-async function deleteContact(req, res, next) {
+};
+
+const deleteContact = async (req, res, next) => {
   try {
     const item = await Contact.findByIdAndDelete(req.params.id);
     if (!item)
@@ -199,10 +284,12 @@ async function deleteContact(req, res, next) {
   } catch (e) {
     next(e);
   }
-}
+};
+
 module.exports = {
   createAdmin,
   login,
+  dashboard,
   contacts,
   getContact,
   searchContacts,

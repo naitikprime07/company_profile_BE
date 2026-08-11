@@ -142,6 +142,12 @@ const generalApplicationSearch = paginatedSearch([
   "contacted",
   "archived",
 ]);
+const openingSearch = paginatedSearch([
+  "active",
+  "inactive",
+  "experienced",
+  "internship",
+]);
 
 const resumeUpload = Joi.object({
   fileName: Joi.string().trim().max(255).required(),
@@ -173,5 +179,6 @@ module.exports = {
   objectIdParams,
   getOpeningTypeParams,
   opening,
+  openingSearch,
   resumeUpload,
 };
