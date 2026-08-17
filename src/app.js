@@ -8,6 +8,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const openingRoutes = require("./routes/openingRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const chatbotRoutes = require("./routes/chatbot");
+const leadershipRoutes = require("./routes/leadershipRoutes");
 
 function createApp() {
   const app = express();
@@ -33,6 +34,7 @@ function createApp() {
   app.use("/api/applications", applicationRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/chatbot", chatbotRoutes);
+  app.use("/api/leadership", leadershipRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

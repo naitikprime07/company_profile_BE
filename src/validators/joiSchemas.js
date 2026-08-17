@@ -163,6 +163,38 @@ const resumeUpload = Joi.object({
     .min(1)
     .max(5 * 1024 * 1024)
     .required(),
+  previousImage: Joi.string().trim().uri().max(2048).allow("").default(""),
+});
+
+const employee = Joi.object({
+  name: requiredString(100).min(2),
+  role: requiredString(120).min(2),
+  bio: requiredString(50),
+  image: Joi.string().trim().uri().max(2048).allow("").default(""),
+  children: Joi.array().items(Joi.link("#employee")).max(100).default([]),
+}).id("employee");
+const owner = Joi.object({
+  name: requiredString(100).min(2),
+  role: requiredString(120).min(2),
+  image: Joi.string().trim().uri().max(2048).allow("").default(""),
+});
+const leadershipTeam = Joi.object({
+  department: requiredString(120).min(2),
+  summary: requiredString(120).min(2),
+  owner: owner.required(),
+  members: Joi.array().items(employee).max(100).default([]),
+});
+const teamImageUpload = Joi.object({
+  fileName: Joi.string().trim().max(255).required(),
+  contentType: Joi.string()
+    .valid("image/jpeg", "image/png", "image/webp")
+    .required(),
+  size: Joi.number()
+    .integer()
+    .min(1)
+    .max(5 * 1024 * 1024)
+    .required(),
+  previousImage: Joi.string().trim().uri().max(2048).allow("").default(""),
 });
 
 module.exports = {
@@ -181,4 +213,6 @@ module.exports = {
   opening,
   openingSearch,
   resumeUpload,
+  leadershipTeam,
+  teamImageUpload,
 };

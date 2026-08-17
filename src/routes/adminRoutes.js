@@ -6,6 +6,7 @@ const applications = require("../controllers/applicationController");
 const generalApplications = require("../controllers/generalApplicationController");
 const validate = require("../middlewares/validateRequest");
 const schemas = require("../validators/joiSchemas");
+const leadership = require("../controllers/leadershipController");
 
 //// admin creation and login
 r.post("/create", validate(schemas.adminCredentials), a.createAdmin);
@@ -14,6 +15,25 @@ r.use(auth);
 
 //// dashboard
 r.get("/dashboard", a.dashboard);
+
+//// leadership hierarchy
+r.post(
+  "/leadership/image-upload-url",
+  validate(schemas.teamImageUpload),
+  leadership.createImageUploadUrl,
+);
+r.post("/leadership", validate(schemas.leadershipTeam), leadership.create);
+r.get("/leadership", leadership.adminList);
+r.put(
+  "/leadership/:id",
+  validate({ params: schemas.objectIdParams(), body: schemas.leadershipTeam }),
+  leadership.update,
+);
+r.delete(
+  "/leadership/:id",
+  validate({ params: schemas.objectIdParams() }),
+  leadership.remove,
+);
 
 //// contacts
 r.get("/contacts", a.contacts);
