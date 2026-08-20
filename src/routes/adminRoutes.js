@@ -7,6 +7,7 @@ const generalApplications = require("../controllers/generalApplicationController
 const validate = require("../middlewares/validateRequest");
 const schemas = require("../validators/joiSchemas");
 const leadership = require("../controllers/leadershipController");
+const blogs = require("../controllers/blogController");
 
 //// admin creation and login
 r.post("/create", validate(schemas.adminCredentials), a.createAdmin);
@@ -21,6 +22,16 @@ r.post(
   "/leadership/image-upload-url",
   validate(schemas.teamImageUpload),
   leadership.createImageUploadUrl,
+);
+r.delete(
+  "/leadership/image",
+  validate({ body: schemas.imageDeleteBody }),
+  leadership.removeUnattachedImage,
+);
+r.delete(
+  "/leadership/:id/images/:personId",
+  validate({ params: schemas.leadershipImageParams }),
+  leadership.removeStoredImage,
 );
 r.post("/leadership", validate(schemas.leadershipTeam), leadership.create);
 r.get("/leadership", leadership.adminList);
@@ -128,6 +139,40 @@ r.delete(
   "/openings/:id",
   validate({ params: schemas.objectIdParams() }),
   o.remove,
+);
+
+///// blogs
+r.get("/blogs", validate({ query: schemas.blogSearch }), blogs.adminList);
+r.post(
+  "/blogs/image-upload-url",
+  validate(schemas.teamImageUpload),
+  blogs.createImageUploadUrl,
+);
+r.delete(
+  "/blogs/image",
+  validate({ body: schemas.imageDeleteBody }),
+  blogs.removeUnattachedImage,
+);
+r.delete(
+  "/blogs/:id/images/:field",
+  validate({ params: schemas.blogImageParams }),
+  blogs.removeStoredImage,
+);
+r.post("/blogs", validate(schemas.blog), blogs.create);
+r.get(
+  "/blogs/:id",
+  validate({ params: schemas.objectIdParams() }),
+  blogs.getOne,
+);
+r.put(
+  "/blogs/:id",
+  validate({ params: schemas.objectIdParams(), body: schemas.blog }),
+  blogs.update,
+);
+r.delete(
+  "/blogs/:id",
+  validate({ params: schemas.objectIdParams() }),
+  blogs.remove,
 );
 
 module.exports = r;

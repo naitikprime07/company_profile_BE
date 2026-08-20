@@ -5,22 +5,6 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const LeadershipTeam = require("../models/LeadershipTeam");
 const { createR2Client, getR2Config } = require("../config/r2");
 
-// const slugify = (value) =>
-//   value
-//     .toLowerCase()
-//     .trim()
-//     .replace(/[^a-z0-9]+/g, "-")
-//     .replace(/^-+|-+$/g, "")
-//     .slice(0, 52) || "department";
-
-// const createSlug = async (department) => {
-//   const base = slugify(department);
-//   let slug = base;
-//   let suffix = 2;
-//   while (await LeadershipTeam.exists({ slug })) slug = `${base}-${suffix++}`;
-//   return slug;
-// };
-
 const serialize = (item) => {
   const value = typeof item.toObject === "function" ? item.toObject() : item;
   return { ...value, _id: String(value._id), id: String(value._id) };
@@ -56,6 +40,15 @@ const employeeImages = (members = []) =>
 const imageUrls = (team) =>
   [team?.owner?.image, ...employeeImages(team?.members || [])].filter(Boolean);
 
+const findMember = (members = [], id) => {
+  for (const member of members) {
+    if (String(member._id) === String(id)) return member;
+    const nested = findMember(member.children || [], id);
+    if (nested) return nested;
+  }
+  return null;
+};
+
 const removeImages = async (urls) => {
   const keys = [...new Set(urls.map(imageKey).filter(Boolean))];
   if (!keys.length) return;
@@ -67,6 +60,7 @@ const removeImages = async (urls) => {
   );
 };
 
+//// public controllers
 const publicList = async (req, res, next) => {
   try {
     const items = await LeadershipTeam.find({ isActive: true })
@@ -78,6 +72,7 @@ const publicList = async (req, res, next) => {
   }
 };
 
+////// admin controllers
 const adminList = async (req, res, next) => {
   try {
     const items = await LeadershipTeam.find()
@@ -149,6 +144,57 @@ const remove = async (req, res, next) => {
   }
 };
 
+const removeStoredImage = async (req, res, next) => {
+  try {
+    const item = await LeadershipTeam.findById(req.params.id);
+    if (!item)
+      return res
+        .status(404)
+        .json({ success: false, message: "Leadership team not found." });
+
+    const person =
+      req.params.personId === "owner"
+        ? item.owner
+        : findMember(item.members, req.params.personId);
+    if (!person)
+      return res
+        .status(404)
+        .json({ success: false, message: "Team member not found." });
+
+    if (!person.image)
+      return res.json({
+        success: true,
+        data: serialize(item),
+        message: "Image is already removed.",
+      });
+
+    await removeImages([person.image]);
+    person.image = "";
+    await item.save();
+    res.json({
+      success: true,
+      data: serialize(item),
+      message: "Profile image removed successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const removeUnattachedImage = async (req, res, next) => {
+  try {
+    if (!imageKey(req.body.imageUrl))
+      return res.status(422).json({
+        success: false,
+        message: "This is not a valid People Hierarchy R2 image URL.",
+      });
+    await removeImages([req.body.imageUrl]);
+    res.json({ success: true, message: "Image removed successfully." });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createImageUploadUrl = async (req, res, next) => {
   try {
     const extension = path.extname(req.body.fileName).toLowerCase();
@@ -184,6 +230,8 @@ const createImageUploadUrl = async (req, res, next) => {
 module.exports = {
   create,
   createImageUploadUrl,
+  removeStoredImage,
+  removeUnattachedImage,
   remove,
   update,
   publicList,

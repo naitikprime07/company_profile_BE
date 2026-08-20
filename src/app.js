@@ -9,6 +9,7 @@ const openingRoutes = require("./routes/openingRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const chatbotRoutes = require("./routes/chatbot");
 const leadershipRoutes = require("./routes/leadershipRoutes");
+const blogRoutes = require("./routes/blogRoutes");
 
 function createApp() {
   const app = express();
@@ -24,7 +25,8 @@ function createApp() {
   app.set("trust proxy", 1);
   app.use(helmet());
   app.use(cors({ origin: "*" }));
-  app.use(express.json({ limit: "20kb" }));
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
   app.get("/api/health", (_req, res) => {
     res.json({ success: true, message: "API is healthy" });
@@ -35,6 +37,7 @@ function createApp() {
   app.use("/api/admin", adminRoutes);
   app.use("/api/chatbot", chatbotRoutes);
   app.use("/api/leadership", leadershipRoutes);
+  app.use("/api/blogs", blogRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

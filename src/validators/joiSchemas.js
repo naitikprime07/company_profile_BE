@@ -196,6 +196,67 @@ const teamImageUpload = Joi.object({
     .required(),
   previousImage: Joi.string().trim().uri().max(2048).allow("").default(""),
 });
+const imageDeleteBody = Joi.object({
+  imageUrl: Joi.string().trim().uri().max(2048).required(),
+});
+const blogImageParams = Joi.object({
+  id: Joi.string().hex().length(24).required(),
+  field: Joi.string().valid("cover", "author").required(),
+});
+const leadershipImageParams = Joi.object({
+  id: Joi.string().hex().length(24).required(),
+  personId: Joi.alternatives()
+    .try(
+      Joi.string().valid("owner"),
+      Joi.string().hex().length(24),
+    )
+    .required(),
+});
+
+const blog = Joi.object({
+  title: requiredString(160).min(3),
+  slug: Joi.string()
+    .trim()
+    .lowercase()
+    .pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(180)
+    .required(),
+  excerpt: requiredString(500).min(20),
+  content: requiredString(1e9).min(50),
+  coverImage: Joi.string().trim().uri().max(2048).allow("").default(""),
+  author: requiredString(100).min(2),
+  authorDetails: Joi.object({
+    designation: Joi.string().trim().max(100).allow("").default(""),
+    bio: Joi.string().trim().max(600).allow("").default(""),
+    linkedin: Joi.string().trim().uri().max(2048).allow("").default(""),
+    image: Joi.string().trim().uri().max(2048).allow("").default(""),
+  }).default({}),
+  category: requiredString(80).min(2),
+  tags: Joi.array().items(Joi.string().trim().max(40)).max(10).default([]),
+  isPublished: Joi.boolean().default(false),
+  isFeatured: Joi.boolean().default(false),
+});
+const blogSearch = Joi.object({
+  query: Joi.string().trim().max(150).allow("").default(""),
+  status: Joi.string().valid("all", "published", "draft").default("all"),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(8),
+});
+const publicBlogSearch = Joi.object({
+  query: Joi.string().trim().max(150).allow("").default(""),
+  all: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(24).default(9),
+  category: Joi.string().trim().max(80).allow("").default(""),
+});
+const blogSlugParams = Joi.object({
+  slug: Joi.string()
+    .trim()
+    .lowercase()
+    .pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(180)
+    .required(),
+});
 
 module.exports = {
   adminCredentials,
@@ -215,4 +276,11 @@ module.exports = {
   resumeUpload,
   leadershipTeam,
   teamImageUpload,
+  imageDeleteBody,
+  blogImageParams,
+  leadershipImageParams,
+  blog,
+  blogSearch,
+  publicBlogSearch,
+  blogSlugParams,
 };

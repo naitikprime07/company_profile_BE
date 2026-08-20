@@ -1,15 +1,19 @@
 function errorHandler(error, _req, res, _next) {
+  if (error?.code === 11000 && error?.keyPattern?.slug)
+    return res.status(409).json({
+      success: false,
+      message:
+        "This blog URL slug is already in use. Please choose another slug.",
+    });
   if (
     error?.code === 11000 &&
     error?.keyPattern?.opening &&
     error?.keyPattern?.email
   )
-    return res
-      .status(409)
-      .json({
-        success: false,
-        message: "You have already applied for this opening with this email.",
-      });
+    return res.status(409).json({
+      success: false,
+      message: "You have already applied for this opening with this email.",
+    });
   if (error?.code === 11000 && error?.keyPattern?.email)
     return res.status(409).json({
       success: false,
