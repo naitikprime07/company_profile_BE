@@ -146,6 +146,28 @@ const dashboard = async (req, res, next) => {
   }
 };
 
+const sidebarCounts = async (req, res, next) => {
+  try {
+    const [newInquiries, newApplications, newIntroductions] =
+      await Promise.all([
+        Contact.countDocuments({ status: "new" }),
+        Application.countDocuments({ status: "new" }),
+        GeneralApplication.countDocuments({ status: "new" }),
+      ]);
+
+    res.json({
+      success: true,
+      data: {
+        inquiries: newInquiries,
+        applications: newApplications,
+        introductions: newIntroductions,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
 ////// contact management
 const contacts = async (req, res, next) => {
   try {
@@ -290,6 +312,7 @@ module.exports = {
   createAdmin,
   login,
   dashboard,
+  sidebarCounts,
   contacts,
   getContact,
   searchContacts,

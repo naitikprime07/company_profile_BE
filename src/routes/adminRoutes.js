@@ -16,6 +16,7 @@ r.use(auth);
 
 //// dashboard
 r.get("/dashboard", a.dashboard);
+r.get("/sidebar-counts", a.sidebarCounts);
 
 //// leadership hierarchy
 r.post(
