@@ -1,4 +1,5 @@
 const r = require("express").Router(),
+  rateLimit = require("express-rate-limit"),
   auth = require("../middlewares/authenticateAdmin"),
   a = require("../controllers/adminController"),
   o = require("../controllers/openingController");
@@ -10,9 +11,34 @@ const leadership = require("../controllers/leadershipController");
 const blogs = require("../controllers/blogController");
 const portfolio = require("../controllers/portfolioController");
 
+// Brute-force protection for the two public (pre-auth) admin endpoints.
+// Only failed attempts are counted, so a real admin is never locked out.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    message: "Too many login attempts. Please try again after 15 minutes.",
+  },
+});
+
+const createLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many admin creation attempts. Please try again later.",
+  },
+});
+
 //// admin creation and login
-r.post("/create", validate(schemas.adminCredentials), a.createAdmin);
-r.post("/login", validate(schemas.login), a.login);
+r.post("/create", createLimiter, validate(schemas.adminCredentials), a.createAdmin);
+r.post("/login", loginLimiter, validate(schemas.login), a.login);
 r.use(auth);
 
 //// dashboard
