@@ -296,6 +296,14 @@ const publicPortfolioSearch = Joi.object({
   limit: Joi.number().integer().min(1).max(10).default(10),
 });
 
+const homeStat = Joi.object({
+  value: Joi.number().integer().min(0).max(1000000000).required(),
+  suffix: Joi.string().trim().max(8).allow("").default(""),
+  label: requiredString(120).min(2),
+  order: Joi.number().integer().min(0).max(9999).default(0),
+  isActive: Joi.boolean().default(true),
+});
+
 module.exports = {
   adminCredentials,
   applicationStatus,
@@ -325,4 +333,5 @@ module.exports = {
   portfolioSearch,
   publicPortfolioSearch,
   portfolioImageParams,
+  homeStat,
 };

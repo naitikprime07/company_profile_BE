@@ -11,6 +11,7 @@ const chatbotRoutes = require("./routes/chatbot");
 const leadershipRoutes = require("./routes/leadershipRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const portfolioRoutes = require("./routes/portfolioRoutes");
+const homeStatRoutes = require("./routes/homeStatRoutes");
 
 function createApp() {
   const app = express();
@@ -40,6 +41,7 @@ function createApp() {
   app.use("/api/leadership", leadershipRoutes);
   app.use("/api/blogs", blogRoutes);
   app.use("/api/portfolio", portfolioRoutes);
+  app.use("/api/home-stats", homeStatRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

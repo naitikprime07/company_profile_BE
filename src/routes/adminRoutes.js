@@ -10,6 +10,7 @@ const schemas = require("../validators/joiSchemas");
 const leadership = require("../controllers/leadershipController");
 const blogs = require("../controllers/blogController");
 const portfolio = require("../controllers/portfolioController");
+const homeStats = require("../controllers/homeStatController");
 
 // Brute-force protection for the two public (pre-auth) admin endpoints.
 // Only failed attempts are counted, so a real admin is never locked out.
@@ -240,6 +241,20 @@ r.delete(
   "/portfolio/:id",
   validate({ params: schemas.objectIdParams() }),
   portfolio.remove,
+);
+
+///// home stats (public homepage counters)
+r.get("/home-stats", homeStats.list);
+r.post("/home-stats", validate(schemas.homeStat), homeStats.create);
+r.put(
+  "/home-stats/:id",
+  validate({ params: schemas.objectIdParams(), body: schemas.homeStat }),
+  homeStats.update,
+);
+r.delete(
+  "/home-stats/:id",
+  validate({ params: schemas.objectIdParams() }),
+  homeStats.remove,
 );
 
 module.exports = r;
