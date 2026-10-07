@@ -10,6 +10,7 @@ const applicationRoutes = require("./routes/applicationRoutes");
 const chatbotRoutes = require("./routes/chatbot");
 const leadershipRoutes = require("./routes/leadershipRoutes");
 const blogRoutes = require("./routes/blogRoutes");
+const portfolioRoutes = require("./routes/portfolioRoutes");
 
 function createApp() {
   const app = express();
@@ -38,6 +39,7 @@ function createApp() {
   app.use("/api/chatbot", chatbotRoutes);
   app.use("/api/leadership", leadershipRoutes);
   app.use("/api/blogs", blogRoutes);
+  app.use("/api/portfolio", portfolioRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

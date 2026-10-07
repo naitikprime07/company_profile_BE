@@ -27,8 +27,8 @@ Why Choose Us:
 
 Contact Information:
 - Address: TFC - The Future Corner, Near 300 Feet Ring Road Touch, Gadhpur, Chowk, Sarthana Jakat Naka - Kamrej Rd, Pasodara, Surat, Gujarat 395013
-- Email: info@primesoftechs.com
-- Phone: +91 70647 02015
+- Email: ${process.env.VITE_CAREERS_EMAIL}
+- Phone: ${process.env.VITE_CONTACT_MOBILE}
 
 Company Tagline: We are creative people building exceptional digital experiences.
 `;

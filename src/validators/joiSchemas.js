@@ -258,6 +258,44 @@ const blogSlugParams = Joi.object({
     .required(),
 });
 
+const portfolio = Joi.object({
+  title: requiredString(120).min(2),
+  type: Joi.string().valid("app", "web").required(),
+  category: requiredString(80).min(2),
+  excerpt: requiredString(300).min(10),
+  image: Joi.string().trim().uri().max(2048).allow("").default(""),
+  detailImages: Joi.array()
+    .items(Joi.string().trim().uri().max(2048).allow(""))
+    .max(2)
+    .default([]),
+  projectUrl: Joi.string().trim().uri().max(2048).allow("").default(""),
+  appLink: Joi.string().trim().uri().max(2048).allow("").default(""),
+  webLink: Joi.string().trim().uri().max(2048).allow("").default(""),
+  platforms: Joi.array().items(Joi.string().trim().max(40)).max(10).default([]),
+  technologies: Joi.array().items(Joi.string().trim().max(40)).max(15).default([]),
+  metric: Joi.string().trim().max(30).allow("").default(""),
+  metricLabel: Joi.string().trim().max(80).allow("").default(""),
+  isPublished: Joi.boolean().default(true),
+  isFeatured: Joi.boolean().default(false),
+  sortOrder: Joi.number().integer().min(0).max(9999).default(0),
+});
+const portfolioSearch = Joi.object({
+  query: Joi.string().trim().max(150).allow("").default(""),
+  type: Joi.string().valid("all", "app", "web").default("all"),
+  status: Joi.string().valid("all", "published", "draft").default("all"),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(10),
+});
+const portfolioImageParams = Joi.object({
+  id: Joi.string().hex().length(24).required(),
+  field: Joi.string().valid("poster", "detail-0", "detail-1").required(),
+});
+const publicPortfolioSearch = Joi.object({
+  type: Joi.string().valid("all", "app", "web").default("all"),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(10).default(10),
+});
+
 module.exports = {
   adminCredentials,
   applicationStatus,
@@ -283,4 +321,8 @@ module.exports = {
   blogSearch,
   publicBlogSearch,
   blogSlugParams,
+  portfolio,
+  portfolioSearch,
+  publicPortfolioSearch,
+  portfolioImageParams,
 };

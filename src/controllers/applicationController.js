@@ -189,13 +189,18 @@ const search = async (req, res, next) => {
           })),
         };
       });
-    const [items, total] = await Promise.all([
+
+    const [items, total, statusTotals] = await Promise.all([
       Application.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
       Application.countDocuments(filter),
+      Application.aggregate([
+        { $match: filter },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
     ]);
     res.json({
       success: true,
@@ -207,6 +212,9 @@ const search = async (req, res, next) => {
           total,
           totalPages: Math.max(1, Math.ceil(total / limit)),
         },
+        statusCounts: Object.fromEntries(
+          statusTotals.map(({ _id, count }) => [_id, count]),
+        ),
       },
     });
   } catch (e) {

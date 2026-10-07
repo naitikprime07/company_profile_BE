@@ -8,6 +8,7 @@ const validate = require("../middlewares/validateRequest");
 const schemas = require("../validators/joiSchemas");
 const leadership = require("../controllers/leadershipController");
 const blogs = require("../controllers/blogController");
+const portfolio = require("../controllers/portfolioController");
 
 //// admin creation and login
 r.post("/create", validate(schemas.adminCredentials), a.createAdmin);
@@ -174,6 +175,45 @@ r.delete(
   "/blogs/:id",
   validate({ params: schemas.objectIdParams() }),
   blogs.remove,
+);
+
+///// portfolio
+r.get("/portfolio", validate({ query: schemas.portfolioSearch }), portfolio.adminList);
+r.post(
+  "/portfolio/image-upload-url",
+  validate(schemas.teamImageUpload),
+  portfolio.createImageUploadUrl,
+);
+r.delete(
+  "/portfolio/image",
+  validate({ body: schemas.imageDeleteBody }),
+  portfolio.removeUnattachedImage,
+);
+r.delete(
+  "/portfolio/:id/image",
+  validate({ params: schemas.objectIdParams() }),
+  portfolio.removeStoredImage,
+);
+r.delete(
+  "/portfolio/:id/images/:field",
+  validate({ params: schemas.portfolioImageParams }),
+  portfolio.removeStoredImageField,
+);
+r.post("/portfolio", validate(schemas.portfolio), portfolio.create);
+r.get(
+  "/portfolio/:id",
+  validate({ params: schemas.objectIdParams() }),
+  portfolio.getOne,
+);
+r.put(
+  "/portfolio/:id",
+  validate({ params: schemas.objectIdParams(), body: schemas.portfolio }),
+  portfolio.update,
+);
+r.delete(
+  "/portfolio/:id",
+  validate({ params: schemas.objectIdParams() }),
+  portfolio.remove,
 );
 
 module.exports = r;
