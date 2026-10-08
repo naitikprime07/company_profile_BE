@@ -12,6 +12,7 @@ const leadershipRoutes = require("./routes/leadershipRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const homeStatRoutes = require("./routes/homeStatRoutes");
+const aboutGalleryRoutes = require("./routes/aboutGalleryRoutes");
 const siteConfigRoutes = require("./routes/siteConfigRoutes");
 
 function createApp() {
@@ -43,6 +44,7 @@ function createApp() {
   app.use("/api/blogs", blogRoutes);
   app.use("/api/portfolio", portfolioRoutes);
   app.use("/api/home-stats", homeStatRoutes);
+  app.use("/api/about-gallery", aboutGalleryRoutes);
   app.use("/api/site-config", siteConfigRoutes);
 
   app.use(notFound);

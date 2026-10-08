@@ -11,6 +11,7 @@ const leadership = require("../controllers/leadershipController");
 const blogs = require("../controllers/blogController");
 const portfolio = require("../controllers/portfolioController");
 const homeStats = require("../controllers/homeStatController");
+const aboutGallery = require("../controllers/aboutGalleryController");
 
 // Brute-force protection for the two public (pre-auth) admin endpoints.
 // Only failed attempts are counted, so a real admin is never locked out.
@@ -255,6 +256,37 @@ r.delete(
   "/home-stats/:id",
   validate({ params: schemas.objectIdParams() }),
   homeStats.remove,
+);
+
+//// about page company images
+r.post(
+  "/about-gallery/image-upload-url",
+  validate(schemas.teamImageUpload),
+  aboutGallery.createImageUploadUrl,
+);
+r.delete(
+  "/about-gallery/image",
+  validate({ body: schemas.imageDeleteBody }),
+  aboutGallery.removeUnattachedImage,
+);
+r.get("/about-gallery", aboutGallery.adminList);
+r.post(
+  "/about-gallery",
+  validate({ body: schemas.aboutGalleryImage }),
+  aboutGallery.create,
+);
+r.put(
+  "/about-gallery/:id",
+  validate({
+    params: schemas.objectIdParams(),
+    body: schemas.aboutGalleryImage,
+  }),
+  aboutGallery.update,
+);
+r.delete(
+  "/about-gallery/:id",
+  validate({ params: schemas.objectIdParams() }),
+  aboutGallery.remove,
 );
 
 module.exports = r;

@@ -304,6 +304,13 @@ const homeStat = Joi.object({
   isActive: Joi.boolean().default(true),
 });
 
+const aboutGalleryImage = Joi.object({
+  image: Joi.string().trim().uri().max(2048).required(),
+  alt: Joi.string().trim().max(120).allow("").default(""),
+  order: Joi.number().integer().min(0).max(9999).default(0),
+  isActive: Joi.boolean().default(true),
+});
+
 module.exports = {
   adminCredentials,
   applicationStatus,
@@ -334,4 +341,5 @@ module.exports = {
   publicPortfolioSearch,
   portfolioImageParams,
   homeStat,
+  aboutGalleryImage,
 };
