@@ -12,6 +12,9 @@ const getSiteConfig = (_req, res) => {
     data: {
       contactEmail: readValue("CONTACT_EMAIL", "info@primesoftechs.com"),
       contactMobile: readValue("CONTACT_MOBILE", "+91 70647 02015"),
+      companyMobile:
+        readValue("COMPANY_MOBILE") ||
+        readValue("CONTACT_MOBILE", "+91 70647 02015"),
       careersEmail: readValue("CAREERS_EMAIL", "hr@primesoftechs.com"),
       linkedInUrl: readValue(
         "LINKEDIN_URL",
@@ -29,6 +32,9 @@ const getSiteConfig = (_req, res) => {
         name: readValue("OFFICE_NAME", "Prime Softech"),
         location: readValue("OFFICE_LOCATION", "Surat, Gujarat, India"),
         address: readValue("OFFICE_ADDRESS", "Surat, Gujarat, India"),
+        footerAddress:
+          readValue("FOOTER_OFFICE_ADDRESS") ||
+          readValue("OFFICE_ADDRESS", "Surat, Gujarat, India"),
         timezone: readValue(
           "OFFICE_TIMEZONE",
           "India Standard Time · UTC+5:30",
